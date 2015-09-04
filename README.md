@@ -1,4 +1,4 @@
-# Hackathon3.x Predict customer worth for Happy Customer Bank
+# Hackathon3.x Predict customer worth for Happy Customer Bank 
 
 ### About Company
 Happy Customer Bank is a mid-sized private bank which deals in all kinds of loans. They have presence across all major cities in India and focus on lending products. They have a digital arm which sources customers from the internet.
@@ -8,5 +8,7 @@ Digital arms of banks today face challenges with lead conversion, they source le
 
 ### Data Set
 We have train and test data set, train data set has both input and output variable(s). Need to predict probability of disbursal for test data set.
+
+Problem from http://discuss.analyticsvidhya.com/t/hackathon-3-x-predict-customer-worth-for-happy-customer-bank/3802
 
 
