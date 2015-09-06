@@ -1,0 +1,85 @@
+---
+title: "Ensemble"
+author: "Rodolfo Viana"
+date: "06-09-2015"
+output: html_document
+---
+
+
+
+```{r}
+train <- read.csv("~/Projetos/Hackathon3.x/data/new_train.csv")
+test <- read.csv("~/Projetos/Hackathon3.x/new_test.csv")
+
+# Step 2 : Specify basic metrics like number of bags/iterations, number of learners/models
+
+num_models <- 24
+itertions <- 1000
+
+# Step 3 : Load the library needed for the performance metric (optional)
+
+library(Metrics)
+
+# Step 4 : Calculating individual performance of models for establishing benchmarks
+
+rmsle_mat <- matrix(0,num_models,2)
+rmsle_mat[,2] <- 1:num_models
+for(i in 1:num_models){
+rmsle_mat[i,1] <- rmsle(train[,i],train[,num_models+1])
+print(rmsle(train[,i],train[,num_models+1]))
+}
+best_model_no <- rmsle_mat[rmsle_mat[,1] == min(rmsle_mat[,1]),2]
+rmsle(train[,best_model_no],train[,num_models+1])
+
+# Step 5 : Using all the metrics specified apply forward selection with replacement in 1000 bags
+
+x <- matrix(0,1000,itertions)
+prediction_test <- matrix(0,nrow(test),1)
+prediction_train <- matrix(0,nrow(train),1)
+for (j in 1:itertions){
+rmsle_in <- 1
+rmsle_new <- matrix(0,num_models,2)
+rmsle_new[,2] <- 1:num_models
+print(j)
+t = 1
+set.seed(j*121)
+train1 <- train[sample(1:nrow(train), 10000,replace=FALSE),]
+for(i in 1:num_models){
+rmsle_mat[i,1] <- rmsle(train1[,i],train1[,num_models+1])
+}
+best_model_no <- rmsle_mat[rmsle_mat[,1] == min(rmsle_mat[,1]),2]
+prediction <- train1[,best_model_no]
+prediction_1 <- test[,best_model_no]
+prediction_2 <- train[,best_model_no]
+x[t,j] <- best_model_no
+while(-1 < 0) {
+t <- t + 1
+prediction1 <- prediction
+for (i in 1:num_models){
+prediction1 <- ((t*prediction) + train1[,i])/(t+1)
+rmsle_new[i,1] <- rmsle(prediction1,train1[,num_models+1])
+}
+rmsle_min <- min(rmsle_new[,1])
+model_no <- rmsle_new[rmsle_new[,1] == min(rmsle_new[,1]),2]
+if(rmsle_in < rmsle_min) {break} else {
+rmsle_in <- rmsle_min
+prediction <- (((t-1)*prediction) + train1[,model_no])/t
+prediction_1 <- (((t-1)*prediction_1) + test[,model_no])/t
+prediction_2 <- (((t-1)*prediction_2) + train[,model_no])/t
+x[t,j] <- model_no
+print(rmsle_in)
+}
+}
+prediction_test <- cbind(prediction_test,prediction_1)
+prediction_train <- cbind(prediction_train,prediction_2)
+}
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

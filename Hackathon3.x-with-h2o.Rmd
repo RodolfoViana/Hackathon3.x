@@ -1,0 +1,93 @@
+---
+title: "Hackathon3.x"
+author: "Rodolfo Viana"
+date: "06-09-2015"
+output: html_document
+---
+
+This is my model that I created during the Hackathon3.x 
+
+```{r}
+library(h2o)
+print("Launching H2O and initializing connection object...")
+conn <- h2o.init(nthreads = -1)
+
+## Find and import data into H2O
+path_input <- "/home/rodolfo/Projetos/Hackathon3.x/data/Train.csv"
+
+print("Importing data into H2O...")
+## Importing the file 
+start <- Sys.time()
+data <- h2o.importFile(path = path_input, destination_frame = "train.hex")
+parseTime <- Sys.time() - start
+print(paste("Took", round(parseTime, digits = 2), "seconds to parse", 
+            nrow(data), "rows and", ncol(data), "columns."))
+
+
+# Splits data in prostate data frame with a ratio of 0.75
+data.split <- h2o.splitFrame(data = data , ratios = 0.75)
+# Creates training set from 1st data set in split
+data.train <- data.split[[1]] 
+# Creates testing set from 2st data set in split
+data.test <- data.split[[2]]
+
+print(paste("Training data has", ncol(data.train), "columns and", nrow(data.train), 
+            "rows, test has",
+              nrow(data.test)))
+
+# Target 
+myY <- 26
+myX <- 2:24
+
+# Run GBM
+gbm <- h2o.gbm(x = myX, build_tree_one_node = T, 
+             y = myY,
+             training_frame    = data.train,
+             validation_frame  = data.test,
+             ntrees            = 25,
+             max_depth         = 5,
+             nfolds            = 10,
+             learn_rate        = 0.1)
+  
+# Score on holdout set & report
+  train_r2_gbm <- h2o.r2(gbm)
+  test_r2_gbm  <- h2o.r2(gbm, valid = TRUE)
+  print(paste0("GBM R2 TRAIN = ", train_r2_gbm, ", R2 TEST = ", test_r2_gbm))
+
+# Check if the ntrees and max_depth is ideal. If it is ideal, train again, now with the complet data. 
+
+# Training with complet data
+gbm <- h2o.gbm(x = myX, build_tree_one_node = T, 
+             y = myY,
+             training_frame    = data,
+             ntrees            = 25,
+             max_depth         = 5,
+             nfolds            = 10,
+             learn_rate        = 0.1)
+
+
+## Find and import data test into H2O
+path_test <- "/home/rodolfo/Projetos/Hackathon3.x/data/Test.csv"
+data_test <- h2o.importFile(path = path_test, destination_frame = "test.hex")
+
+print("Exporting")
+
+gbm.fit = h2o.predict(object = gbm, newdata = data_test)
+h2o.exportFile(gbm.fit, path = "/home/rodolfo/Projetos/Hackathon3.x/gbm25-5-10f",  force = TRUE)
+
+
+```
+
+Import prediction and prepare the csv to submit
+
+```{r}
+Test <- read.csv("~/Projetos/Hackathon3.x/data/Test.csv")
+predict <- read.table("~/Projetos/Hackathon3.x/gbm25-5-10f", header=TRUE, quote="\"")
+
+sub_predict <- cbind(Test[1], predict)
+
+colnames(sub_predict) <- c("ID","Disbursed")
+write.csv(sub_predict, file = "~/Projetos/Hackathon3.x/sub-gbm-25-5-10f.csv", row.names = FALSE)
+
+print("Done")
+```

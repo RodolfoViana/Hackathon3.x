@@ -1,0 +1,53 @@
+---
+title: "Submition"
+author: "Rodolfo Viana"
+date: "05-09-2015"
+output: html_document
+---
+
+Please mail your submissions to contest@analyticsvidhya.com. Submissions should have the output file and the code file.
+
+```{r}
+
+#Train <- read.csv("~/Projetos/Hackathon3.x/data/Train.csv")
+Test <- read.csv("~/Projetos/Hackathon3.x/data/Test.csv")
+drf150.30 <- read.table("~/Projetos/Hackathon3.x/gbm-100-5-50", header=TRUE, quote="\"")
+
+id <- Test[1]
+
+drf150.30 <- cbind(id, drf150.30)
+
+colnames(drf150.30) <- c("ID","Disbursed")
+write.csv(drf150.30, file = "~/Projetos/Hackathon3.x/gbm-100-5-50.csv", row.names = FALSE)
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+gbm <- read.table("~/Projetos/Hackathon3.x/gbm25-5-10f")
+drf <- read.table("~/Projetos/Hackathon3.x/drf150-30-11")
+gbm2 <- read.table("~/Projetos/Hackathon3.x/gbm25-5-10f-4")
+drf2 <- read.table("~/Projetos/Hackathon3.x/drf150-30")
+deep <- read.table("~/Projetos/Hackathon3.x/gbm-25-5-100f")
+x <- drf150.30[2]
+drf150.30 <- cbind(gbm, deep)
+drf150.30 <- cbind(x, drf150.30)
+colnames(drf150.30) <- c("A","B")
+drf150.30$A <- as.numeric(as.character(drf150.30$A))
+drf150.30$B <- as.numeric(as.character(drf150.30$B))
+drf150.30$C <- as.numeric(as.character(drf150.30$C))
+drf150.30$D <- as.numeric(as.character(drf150.30$D))
+drf150.30$F <- as.numeric(as.character(drf150.30$F))
+drf150.30$G <- as.numeric(as.character(drf150.30$G))
+drf150.30 = drf150.30[-1,]
+
+drf150.30$G <- drf150.30$A + drf150.30$B
+
+
+drf150.30 <- cbind(id, drf150.30$G)
+drf150.30$Disbursed <- drf150.30$Disbursed / 4
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

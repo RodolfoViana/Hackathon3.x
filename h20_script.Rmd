@@ -1,0 +1,92 @@
+---
+title: "h20_script"
+author: "Rodolfo Viana"
+date: "04-09-2015"
+output: html_document
+---
+
+Train and Test script
+
+```{r}
+## Set your working directory
+## setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+
+## Load library and initialize h2o
+library(h2o)
+print("Launching H2O and initializing connection object...")
+conn <- h2o.init(nthreads = -1)
+#h2o.init(Xmx="10g")
+
+## Find and import data into H2O
+path_input <- "/home/rodolfo/Projetos/Hackathon3.x/data/Train.csv"
+
+print("Importing data into H2O...")
+## Importing the file 
+start <- Sys.time()
+data <- h2o.importFile(path = path_input, destination_frame = "train.hex")
+parseTime <- Sys.time() - start
+print(paste("Took", round(parseTime, digits = 2), "seconds to parse", 
+            nrow(data), "rows and", ncol(data), "columns."))
+
+
+# Splits data in prostate data frame with a ratio of 0.75
+data.split <- h2o.splitFrame(data = data , ratios = 0.75)
+# Creates training set from 1st data set in split
+data.train <- data.split[[1]] 
+# Creates testing set from 2st data set in split
+data.test <- data.split[[2]]
+
+print(paste("Training data has", ncol(data.train), "columns and", nrow(data.train), 
+            "rows, test has",
+              nrow(data.test)))
+
+
+#myY <- "Disbursed"
+#myEx <- "Disbursed, LoggedIn, ID"
+#myX <- setdiff(names(data.train), myEx)
+
+myY <- 26
+myEx <- "Disbursed, LoggedIn, ID"
+myX <- 2:24
+
+  # Run GBM
+  gbm <- h2o.gbm(x = myX, build_tree_one_node = T, 
+               y = myY,
+               training_frame    = data.train,
+               validation_frame  = data.test,
+               ntrees            = 5,
+               max_depth         = 6,
+               learn_rate        = 0.1)
+
+  # Run DRF
+  drf <- h2o.randomForest(x = myX,
+                        y = myY,
+                        training_frame    = data,
+                        #validation_frame  = data.test,
+                        ntrees            = 150,
+                        max_depth         = 30)
+  
+# Score on holdout set & report
+  train_r2_gbm <- h2o.r2(gbm)
+  test_r2_gbm  <- h2o.r2(gbm, valid = TRUE)
+  print(paste0("GBM R2 TRAIN = ", train_r2_gbm, ", R2 TEST = ", test_r2_gbm))
+
+  train_r2_drf <- h2o.r2(drf)
+  test_r2_drf  <- h2o.r2(drf, valid = TRUE)
+  print(paste0("DRF R2 TRAIN = ", train_r2_drf, ", R2 TEST = ", test_r2_drf))
+
+
+## Find and import data test into H2O
+path_test <- "/home/rodolfo/Projetos/Hackathon3.x/data/Test.csv"
+data_test <- h2o.importFile(path = path_test, destination_frame = "test.hex")
+
+print("Exporting")
+
+gbm.fit = h2o.predict(object = gbm, newdata = data_test)
+h2o.exportFile(gbm.fit, path = "/home/rodolfo/Projetos/Hackathon3.x/gbm200-6",  force = TRUE)
+
+drf.fit = h2o.predict(object = drf, newdata = data_test)
+h2o.exportFile(drf.fit, path = "/home/rodolfo/Projetos/Hackathon3.x/drf150-30-all",  force = TRUE)
+
+print("Done")
+```
